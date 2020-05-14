@@ -242,7 +242,10 @@ public class UserResource {
 
         if (rep.getAttributes() != null) {
             for (Map.Entry<String, List<String>> attr : rep.getAttributes().entrySet()) {
-                user.setAttribute(attr.getKey(), attr.getValue());
+                List<String> currentValue = user.getAttribute(attr.getKey());
+                if (currentValue == null || currentValue.size() != attr.getValue().size() || !currentValue.containsAll(attr.getValue())) {
+                    user.setAttribute(attr.getKey(), attr.getValue());
+                }
             }
 
             for (String attr : attrsToRemove) {
@@ -311,7 +314,7 @@ public class UserResource {
         userSession.setNote(IMPERSONATOR_USERNAME.toString(), impersonator);
 
         AuthenticationManager.createLoginCookie(session, realm, userSession.getUser(), userSession, session.getContext().getUri(), clientConnection);
-        URI redirect = AccountFormService.accountServiceApplicationPage(session.getContext().getUri()).build(realm.getName());
+        URI redirect = AccountFormService.accountServiceBaseUrl(session.getContext().getUri()).build(realm.getName());
         Map<String, Object> result = new HashMap<>();
         result.put("sameRealm", sameRealm);
         result.put("redirect", redirect.toString());
@@ -617,7 +620,12 @@ public class UserResource {
             throw new ErrorResponseException(e.getMessage(), MessageFormat.format(messages.getProperty(e.getMessage(), e.getMessage()), e.getParameters()),
                     Status.BAD_REQUEST);
         }
-        if (cred.isTemporary() != null && cred.isTemporary()) user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+        if (cred.isTemporary() != null && cred.isTemporary()) {
+            user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+        } else {
+            // Remove a potentially existing UPDATE_PASSWORD action when explicitly assigning a non-temporary password.
+            user.removeRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+        }
 
         adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
     }
@@ -825,7 +833,7 @@ public class UserResource {
 
             adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
 
-            return Response.ok().build();
+            return Response.noContent().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
             return ErrorResponse.error("Failed to send execute actions email", Status.INTERNAL_SERVER_ERROR);
