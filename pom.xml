@@ -238,6 +238,7 @@
         <module>adapters</module>
         <module>authz</module>
         <module>misc</module>
+        <module>saml-nameid-value-mapper</module>
     </modules>
 
     <dependencyManagement>
