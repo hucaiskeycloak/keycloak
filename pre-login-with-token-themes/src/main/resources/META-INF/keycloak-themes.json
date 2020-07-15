@@ -1,0 +1,6 @@
+{
+  "themes": [{
+    "name": "one-pass-protocol",
+    "types": ["admin"]
+  }]
+}
