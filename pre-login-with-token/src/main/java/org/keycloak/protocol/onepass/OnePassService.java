@@ -19,6 +19,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 public class OnePassService extends AuthorizationEndpointBase {
 
@@ -34,9 +36,11 @@ public class OnePassService extends AuthorizationEndpointBase {
     @GET
     @NoCache
     public Response handleGET(@QueryParam("client_id") String clientId,
-                              @QueryParam("token") String token) {
+                              @QueryParam("token") String token,
+                              @QueryParam("redirect_url") String redirectURL) {
         this.clientId = clientId;
         this.token = token;
+        this.redirectURL = redirectURL;
         return handle();
     }
 
@@ -44,9 +48,11 @@ public class OnePassService extends AuthorizationEndpointBase {
     @NoCache
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response handlePOST(@FormParam("client_id") String clientId,
-                               @FormParam("token") String token) {
+                               @FormParam("token") String token,
+                               @FormParam("redirect_url") String redirectURL) {
         this.clientId = clientId;
         this.token = token;
+        this.redirectURL = redirectURL;
         return handle();
     }
 
@@ -114,7 +120,9 @@ public class OnePassService extends AuthorizationEndpointBase {
             event.error(Errors.INVALID_CLIENT);
             return ErrorPage.error(session, null, Response.Status.BAD_REQUEST, Messages.INVALID_REQUESTER);
         }
-        redirectURL = client.getBaseUrl();
+        if (redirectURL == null || redirectURL.isEmpty()) {
+            redirectURL = client.getBaseUrl();
+        }
         if (redirectURL == null || redirectURL.isEmpty() || !(redirectURL.startsWith("http://") || redirectURL.startsWith("https://"))) {
             event.event(EventType.CLIENT_LOGIN);
             event.error(Errors.INVALID_REDIRECT_URI);
